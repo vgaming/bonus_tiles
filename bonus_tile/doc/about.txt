@@ -1,0 +1,3 @@
+BonusTile - generate random bonuses on map.
+
+Similar to BonusSpam add-on, but does not have Out-Of-Sync bugs, and is aware of map symmetries.
