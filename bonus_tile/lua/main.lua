@@ -11,8 +11,13 @@ local helper = wesnoth.require("lua/helper.lua")
 local on_event = wesnoth.require("lua/on_event.lua")
 local T = wesnoth.require("lua/helper.lua").set_wml_tag_metatable {}
 
-local bonus_rounds = 2
 local width, height, border = wesnoth.get_map_size()
+local bonus_tiles_per_side = math.ceil(
+	(width - 2 * border)
+		* (height - 2 * border)
+		/ #wesnoth.sides
+		/ 30
+)
 
 local function get_side(x, y)
 	return wesnoth.get_variable("bonustile_side_" .. x .. "_" .. y)
@@ -52,26 +57,29 @@ local function remove_bonus(x, y)
 	set_label(x, y, nil, nil)
 end
 
+local fibonacci = { 1, 2, 3, 5, 8, 13, 21 }
 local function place_random_bonus(orig_x, orig_y, side)
 	local linked_hexes = bonustile.find_linked_hexes(orig_x, orig_y)
-	local is_gold = wesnoth.random(1, 2) == 2
-	local value = is_gold and wesnoth.random(1, 10) or wesnoth.random(1, 15)
+	local is_gold = wesnoth.random(1, 3) == 3
+	local value = fibonacci[is_gold and wesnoth.random(4, 6) or wesnoth.random(5, 7)]
 	local type = is_gold and "gold" or "xp"
 	local text = "+" .. value .. type
 	local type_long = is_gold and "gold" or "experience"
 	local tooltip = "Gives +" .. value .. type_long .. " to unit standing at this hex at beginning of side " .. side .. "'s turn"
 
+	local number_of_bonuses_placed = 0
 	for _, pair in ipairs(linked_hexes) do
 		local x = pair[1]
 		local y = pair[2]
 		if get_side(x, y) == nil then
+			number_of_bonuses_placed = number_of_bonuses_placed + 1
 			set_value(x, y, value)
 			set_type(x, y, type)
 			set_side(x, y, side)
 			set_label(x, y, text, tooltip)
 		end
 	end
-
+	return number_of_bonuses_placed
 end
 
 local peasant = wesnoth.get_units { id = "bonustile_peasant" }[1]
@@ -92,6 +100,7 @@ on_event("side turn", function()
 					local bonus_value = get_value(x, y)
 					if bonus_type == "xp" then
 						unit.experience = unit.experience + bonus_value
+						wesnoth.advance_unit(unit)
 					else
 						wesnoth.sides[unit.side].gold = wesnoth.sides[unit.side].gold + bonus_value
 					end
@@ -102,16 +111,14 @@ on_event("side turn", function()
 	end
 
 	local attempts = 0
-	for _ = 1, bonus_rounds do
+	local number_of_bonuses_placed = 0
+	while number_of_bonuses_placed < bonus_tiles_per_side and attempts < bonus_tiles_per_side * 10 do
+		attempts = attempts + 1
 		local x = wesnoth.random(border, width - border)
 		local y = wesnoth.random(border, height - border)
 		local terrain = wesnoth.get_terrain(x, y)
 		if wesnoth.unit_movement_cost(peasant, terrain) < 10 then
-			place_random_bonus(x, y, side)
-		elseif attempts > bonus_rounds * 10 then
-			break
-		else
-			attempts = attempts + 1
+			number_of_bonuses_placed = number_of_bonuses_placed + place_random_bonus(x, y, side)
 		end
 	end
 end)
