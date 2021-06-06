@@ -9,8 +9,8 @@ local on_event = wesnoth.require("lua/on_event.lua")
 
 local width, height, border = wesnoth.get_map_size()
 local bonus_tiles_per_side = math.ceil(
-	(width - 2 * border)
-		* (height - 2 * border)
+	(width + 1 - 2 * border)
+		* (height + 1 - 2 * border)
 		/ #wesnoth.sides
 		/ 30
 )
