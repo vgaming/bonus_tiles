@@ -5,11 +5,7 @@ local bonustile = bonustile
 local wesnoth = wesnoth
 local ipairs = ipairs
 local math = math
-local string = string
-local table = table
-local helper = wesnoth.require("lua/helper.lua")
 local on_event = wesnoth.require("lua/on_event.lua")
-local T = wesnoth.require("lua/helper.lua").set_wml_tag_metatable {}
 
 local width, height, border = wesnoth.get_map_size()
 local bonus_tiles_per_side = math.ceil(
@@ -65,7 +61,8 @@ local function place_random_bonus(orig_x, orig_y, side)
 	local type = is_gold and "gold" or "xp"
 	local text = "+" .. value .. type
 	local type_long = is_gold and "gold" or "experience"
-	local tooltip = "Gives +" .. value .. type_long .. " to unit standing at this tile at beginning of side " .. side .. "'s turn"
+	local tooltip = "Gives +" .. value .. type_long
+		.. " to unit standing at this tile at beginning of side " .. side .. "'s turn"
 
 	local number_of_bonuses_placed = 0
 	for _, pair in ipairs(linked_hexes) do

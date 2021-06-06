@@ -8,7 +8,6 @@ local wesnoth = wesnoth
 local math = math
 local ipairs = ipairs
 local string = string
-local table = table
 local bonustile = bonustile
 
 local config_threshold = 0.9
@@ -61,11 +60,11 @@ end
 
 local function rot_func(rot_re, rot_im)
 	return function(wes_x, wes_y)
-		local re, im = to_complex(wes_x, wes_y)
-		local re, im = re - center_re, im - center_im
-		local re, im = complex_multiply(re, im, rot_re, rot_im)
-		local re, im = re + center_re, im + center_im
-		return to_wes_coordinates(re, im)
+		local re1, im1 = to_complex(wes_x, wes_y)
+		local re2, im2 = re1 - center_re, im1 - center_im
+		local re3, im3 = complex_multiply(re2, im2, rot_re, rot_im)
+		local re4, im4 = re3 + center_re, im3 + center_im
+		return to_wes_coordinates(re4, im4)
 	end
 end
 
@@ -82,8 +81,8 @@ end
 
 local function mirror_func(rotation)
 	return function(x, y)
-		local x, y = x_mirror_func(x, y)
-		return rotation(x, y)
+		local mirrored_x, mirrored_y = x_mirror_func(x, y)
+		return rotation(mirrored_x, mirrored_y)
 	end
 end
 
