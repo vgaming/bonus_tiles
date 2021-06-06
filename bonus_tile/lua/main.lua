@@ -90,8 +90,8 @@ end
 on_event("side turn", function()
 	local side = wesnoth.current.side
 
-	for y = border, height - border do
-		for x = border, width - border do
+	for y = border, height - border + 1 do
+		for x = border, width - border + 1 do
 			local bonus_side = get_side(x, y)
 			if bonus_side == side then
 				local unit = wesnoth.get_unit(x, y)
@@ -114,8 +114,8 @@ on_event("side turn", function()
 	local number_of_bonuses_placed = 0
 	while number_of_bonuses_placed < bonus_tiles_per_side and attempts < bonus_tiles_per_side * 10 do
 		attempts = attempts + 1
-		local x = wesnoth.random(border, width - border)
-		local y = wesnoth.random(border, height - border)
+		local x = wesnoth.random(border, width - border + 1)
+		local y = wesnoth.random(border, height - border + 1)
 		local terrain = wesnoth.get_terrain(x, y)
 		if wesnoth.unit_movement_cost(peasant, terrain) < 10 then
 			number_of_bonuses_placed = number_of_bonuses_placed + place_random_bonus(x, y, side)
