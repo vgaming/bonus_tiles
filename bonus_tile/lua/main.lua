@@ -65,7 +65,7 @@ local function place_random_bonus(orig_x, orig_y, side)
 	local type = is_gold and "gold" or "xp"
 	local text = "+" .. value .. type
 	local type_long = is_gold and "gold" or "experience"
-	local tooltip = "Gives +" .. value .. type_long .. " to unit standing at this hex at beginning of side " .. side .. "'s turn"
+	local tooltip = "Gives +" .. value .. type_long .. " to unit standing at this tile at beginning of side " .. side .. "'s turn"
 
 	local number_of_bonuses_placed = 0
 	for _, pair in ipairs(linked_hexes) do
