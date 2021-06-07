@@ -56,11 +56,24 @@ end
 local fibonacci = { 1, 2, 3, 5, 8, 13, 21 }
 local function place_random_bonus(orig_x, orig_y, side)
 	local linked_hexes = bonustile.find_linked_hexes(orig_x, orig_y)
-	local is_gold = wesnoth.random(1, 3) == 3
-	local value = fibonacci[is_gold and wesnoth.random(4, 6) or wesnoth.random(5, 7)]
-	local type = is_gold and "gold" or "xp"
+	local type_index = wesnoth.random(1, 4)
+	local value
+	local type
+	local type_long
+	if type_index <= 1 then
+		type = "gold"
+		value = fibonacci[wesnoth.random(4, 6)]
+		type_long = "gold"
+	elseif type_index <= 2 then
+		type = "heal"
+		value = fibonacci[wesnoth.random(4, 6)]
+		type_long = "heal"
+	else
+		type = "xp"
+		value = fibonacci[wesnoth.random(5, 7)]
+		type_long = "experience"
+	end
 	local text = "+" .. value .. type
-	local type_long = is_gold and "gold" or "experience"
 	local tooltip = "Gives +" .. value .. type_long
 		.. " to unit standing at this tile at beginning of side " .. side .. "'s turn (BonusTile add-on)"
 
@@ -106,6 +119,11 @@ on_event("side turn", function()
 					if bonus_type == "xp" then
 						unit.experience = unit.experience + bonus_value
 						wesnoth.advance_unit(unit)
+					elseif bonus_type == "heal" then
+						-- some Eras allow more than maximum HP
+						if unit.hitpoints < unit.max_hitpoints then
+							unit.hitpoints = math.min(unit.max_hitpoints, unit.hitpoints + bonus_value)
+						end
 					else
 						wesnoth.sides[unit.side].gold = wesnoth.sides[unit.side].gold + bonus_value
 					end

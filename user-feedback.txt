@@ -1,1 +1,6 @@
-jeet: N% heal
+jeet:
+	N% heal
+Baylando:
+	N% heal
+	trade spots like 100% heal for gold
+	negative points like slow or poison
