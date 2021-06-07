@@ -62,7 +62,7 @@ local function place_random_bonus(orig_x, orig_y, side)
 	local text = "+" .. value .. type
 	local type_long = is_gold and "gold" or "experience"
 	local tooltip = "Gives +" .. value .. type_long
-		.. " to unit standing at this tile at beginning of side " .. side .. "'s turn"
+		.. " to unit standing at this tile at beginning of side " .. side .. "'s turn (BonusTile add-on)"
 
 	local number_of_bonuses_placed = 0
 	for _, pair in ipairs(linked_hexes) do
@@ -83,6 +83,14 @@ local peasant = wesnoth.get_units { id = "bonustile_peasant" }[1]
 if peasant == nil then
 	peasant = wesnoth.create_unit { type = "Peasant", id = "bonustile_peasant" }
 end
+
+on_event("start", function()
+	for _, side in ipairs(wesnoth.sides) do
+		if side.__cfg.allow_player then
+			side.village_gold = side.village_gold - 1
+		end
+	end
+end)
 
 on_event("side turn", function()
 	local side = wesnoth.current.side
