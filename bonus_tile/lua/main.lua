@@ -11,7 +11,7 @@ local width, height, border = wesnoth.get_map_size()
 local bonus_tiles_per_side = math.ceil(
 	(width + 1 - 2 * border)
 		* (height + 1 - 2 * border)
-		/ #wesnoth.sides
+		/ #wesnoth.sides -- bonuses are generated for each side
 		/ 30
 )
 
@@ -97,15 +97,30 @@ if peasant == nil then
 	peasant = wesnoth.create_unit { type = "Peasant", id = "bonustile_peasant" }
 end
 
+local function generate_bonuses_for_side(side)
+	local attempts = 0
+	local number_of_bonuses_placed = 0
+	while number_of_bonuses_placed < bonus_tiles_per_side and attempts < bonus_tiles_per_side * 10 do
+		attempts = attempts + 1
+		local x = wesnoth.random(border, width - border + 1)
+		local y = wesnoth.random(border, height - border + 1)
+		local terrain = wesnoth.get_terrain(x, y)
+		if wesnoth.unit_movement_cost(peasant, terrain) < 10 then
+			number_of_bonuses_placed = number_of_bonuses_placed + place_random_bonus(x, y, side)
+		end
+	end
+end
+
 on_event("start", function()
 	for _, side in ipairs(wesnoth.sides) do
 		if side.__cfg.allow_player then
 			side.village_gold = side.village_gold - 1
 		end
+		generate_bonuses_for_side(side.side)
 	end
 end)
 
-on_event("side turn", function()
+on_event("turn refresh", function()
 	local side = wesnoth.current.side
 
 	for y = border, height - border + 1 do
@@ -132,18 +147,7 @@ on_event("side turn", function()
 			end
 		end
 	end
-
-	local attempts = 0
-	local number_of_bonuses_placed = 0
-	while number_of_bonuses_placed < bonus_tiles_per_side and attempts < bonus_tiles_per_side * 10 do
-		attempts = attempts + 1
-		local x = wesnoth.random(border, width - border + 1)
-		local y = wesnoth.random(border, height - border + 1)
-		local terrain = wesnoth.get_terrain(x, y)
-		if wesnoth.unit_movement_cost(peasant, terrain) < 10 then
-			number_of_bonuses_placed = number_of_bonuses_placed + place_random_bonus(x, y, side)
-		end
-	end
+	generate_bonuses_for_side(side)
 end)
 
 -- >>
