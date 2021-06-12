@@ -105,7 +105,7 @@ local bonuses_name_long = {
 	xp = "Gives +@ experience",
 	mp = "Gives +@ movement (permanent)",
 	hp = "Gives +@% of unit base hitpoints (permanent, but not current)",
-	dmg = "Gives +@% of unit base damages (permanent, cumulative but rounded down)",
+	dmg = "Gives +@% of unit base damages (permanent, additive but rounded down)",
 	teleport = "Teleports to a random place on the map",
 	sand = "Traps a unit for @ turn, making it unable to move",
 	troll = "Gives troll appearance for @ turn",
@@ -203,15 +203,14 @@ on_event("turn refresh", function()
 							T.effect { apply_to = "hitpoints", increase_total = add },
 						})
 					elseif bonus_type == "dmg" then
-						local prev = unit.variables["bonustile_dmg"] or 0
-						local new = prev + bonus_value
-						unit.variables["bonustile_dmg"] = new
+						local dmg = (unit.variables["bonustile_dmg"] or 0) + bonus_value
+						unit.variables["bonustile_dmg"] = dmg
 						wesnoth.wml_actions.remove_object {
 							object_id = "bonustile_dmg"
 						}
 						wesnoth.add_modification(unit, "object", {
 							id = "bonustile_dmg",
-							T.effect { apply_to = "attack", increase_damage = "+" .. new .. "%" },
+							T.effect { apply_to = "attack", increase_damage = "+" .. dmg .. "%" },
 						})
 					elseif bonus_type == "teleport" then
 						local teleport_attempt = 0
@@ -271,7 +270,7 @@ on_event("turn refresh", function()
 			wesnoth.wml_actions.remove_unit_overlay {
 				image = "units/trolls/whelp.png",
 			}
-			local img = unit.image_mods:gsub("O%(0%)$", "NOP()", 1)
+			local img = unit.image_mods:gsub("O%(0%)", "NOP()", 1)
 			wesnoth.add_modification(unit, "object", {
 				T.effect { apply_to = "image_mod", replace = img },
 			})
