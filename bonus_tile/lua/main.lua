@@ -71,7 +71,7 @@ local bonuses_type = {
 	"sand", "sand", "sand",
 	"troll",
 	"petrify",
-	"friendship","friendship","friendship","friendship","friendship",
+	"friendship",
 };
 local bonuses_values = {
 	gold = { 5, 5, 5, 8, 8, 13 },
@@ -93,9 +93,9 @@ local bonuses_name_short = {
 	mp = "+@mp",
 	hp = "+@%hp",
 	dmg = "+@%dmg",
-	troll = "trollify",
-	sand = "quicksand",
 	teleport = "portal",
+	sand = "quicksand",
+	troll = "trollify",
 	petrify = "petrify",
 	friendship = "friendship",
 }
@@ -107,8 +107,8 @@ local bonuses_name_long = {
 	hp = "Gives +@% of unit base hitpoints (permanent, but not current)",
 	dmg = "Gives +@% of unit base damages (permanent, cumulative but rounded down)",
 	teleport = "Brings you to a random place on the map",
-	troll = "Gives troll appearance for @ turn",
 	sand = "Traps for @ turn",
+	troll = "Gives troll appearance for @ turn",
 	petrify = "Petrifies for @ turn",
 	friendship = "Makes the unit peaceful for @ turn. It cannot attack and doesn't receive damage",
 }
@@ -227,12 +227,6 @@ on_event("turn refresh", function()
 						end
 					elseif bonus_type == "sand" then
 						unit.variables.bonustile_sand = bonus_value
-					elseif bonus_type == "friendship" then
-						unit.variables.bonustile_friendship = bonus_value
-						unit.status.invulnerable = true
-					elseif bonus_type == "petrify" then
-						unit.variables.bonustile_petrify = bonus_value
-						unit.status.petrified = true
 					elseif bonus_type == "troll" then
 						unit.variables.bonustile_troll = bonus_value
 						wesnoth.add_modification(unit, "object", {
@@ -240,6 +234,12 @@ on_event("turn refresh", function()
 							T.effect { apply_to = "image_mod", add = "O(0)" },
 							T.effect { apply_to = "overlay", add = "units/trolls/whelp.png" },
 						})
+					elseif bonus_type == "petrify" then
+						unit.variables.bonustile_petrify = bonus_value
+						unit.status.petrified = true
+					elseif bonus_type == "friendship" then
+						unit.variables.bonustile_friendship = bonus_value
+						unit.status.invulnerable = true
 					else
 						wesnoth.message("Bonus Tiles", "Cannot apply unknown bonus type " .. bonus_type)
 					end
@@ -255,6 +255,13 @@ on_event("turn refresh", function()
 	local side = wesnoth.current.side
 	for _, unit in ipairs(wesnoth.get_units { side = side }) do
 
+		-- sand
+		local sand = unit.variables.bonustile_sand or -1
+		if sand > 0 then
+			unit.moves = 0
+			unit.variables.bonustile_sand = sand - 1
+		end
+
 		-- troll
 		local troll = unit.variables.bonustile_troll or -1
 		if troll > 0 then
@@ -268,13 +275,6 @@ on_event("turn refresh", function()
 			wesnoth.add_modification(unit, "object", {
 				T.effect { apply_to = "image_mod", replace = img },
 			})
-		end
-
-		-- sand
-		local sand = unit.variables.bonustile_sand or -1
-		if sand > 0 then
-			unit.moves = 0
-			unit.variables.bonustile_sand = sand - 1
 		end
 
 		-- petrify
