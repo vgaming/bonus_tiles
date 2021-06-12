@@ -106,10 +106,10 @@ local bonuses_name_long = {
 	mp = "Gives +@ movement (permanent)",
 	hp = "Gives +@% of unit base hitpoints (permanent, but not current)",
 	dmg = "Gives +@% of unit base damages (permanent, cumulative but rounded down)",
-	teleport = "Brings you to a random place on the map",
-	sand = "Traps for @ turn",
+	teleport = "Teleports to a random place on the map",
+	sand = "Traps a unit for @ turn, making it unable to move",
 	troll = "Gives troll appearance for @ turn",
-	petrify = "Petrifies for @ turn",
+	petrify = "Traps and petrifies a unit for @ turn, making it unable to move or attack",
 	friendship = "Makes the unit peaceful for @ turn. It cannot attack and doesn't receive damage",
 }
 
