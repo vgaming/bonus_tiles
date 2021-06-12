@@ -1,0 +1,13 @@
+Baylando:
+	trade spots like 100% heal for gold
+	negative points like slow or poison
+Sicario:
+	Fewer ultra-bonuses like +21xp (implementation: use random array element [8, 13, 21] ?)
+vasili:
+	get rid of "side's turn"
+Jess:
+	magnet / pushback
+	illusion unit (disappears upon attack, neither you nor the opponent know if it's real)
+	grenade (lose HP)
+	stinky (you leave trail of negative bonuses)
+	ambush / invisibility
