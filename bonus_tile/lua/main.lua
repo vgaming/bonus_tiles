@@ -13,14 +13,8 @@ local width, height, border = wesnoth.get_map_size()
 local bonus_tiles_per_side = math.ceil(
 	(width + 1 - 2 * border)
 		* (height + 1 - 2 * border)
-		/ #wesnoth.sides -- bonuses are generated for each side
-		/ 30
+		/ 25
 )
-
----@return number
-local function get_side(x, y)
-	return wesnoth.get_variable("bonustile_side_" .. x .. "_" .. y)
-end
 
 ---@return string
 local function get_type(x, y)
@@ -32,9 +26,6 @@ local function get_value(x, y)
 	return wesnoth.get_variable("bonustile_value_" .. x .. "_" .. y)
 end
 
-local function set_side(x, y, side)
-	wesnoth.set_variable("bonustile_side_" .. x .. "_" .. y, side)
-end
 local function set_type(x, y, type)
 	wesnoth.set_variable("bonustile_type_" .. x .. "_" .. y, type)
 end
@@ -54,7 +45,6 @@ local function set_label(x, y, text, tooltip)
 end
 
 local function remove_bonus(x, y)
-	set_side(x, y, nil)
 	set_type(x, y, nil)
 	set_value(x, y, nil)
 	set_label(x, y, nil, nil)
@@ -101,16 +91,16 @@ local bonuses_name_short = {
 }
 local bonuses_name_long = {
 	gold = "Gives +@ gold",
-	heal = "Gives +@ heal",
+	heal = "Heals @ hp",
 	xp = "Gives +@ experience",
-	mp = "Gives +@ movement (permanent)",
-	hp = "Gives +@% of unit base hitpoints (permanent, but not current)",
-	dmg = "Gives +@% of unit base damages (permanent, additive but rounded down)",
+	mp = "Gives +@ movement",
+	hp = "Gives +@% of unit base hitpoints",
+	dmg = "Gives +@% to unit base damages",
 	teleport = "Teleports to a random place on the map",
 	sand = "Traps a unit for @ turn, making it unable to move",
 	troll = "Gives troll appearance for @ turn",
 	petrify = "Traps and petrifies a unit for @ turn, making it unable to move or attack",
-	friendship = "Makes the unit peaceful for @ turn. It cannot attack and doesn't receive damage",
+	friendship = "Makes the unit peaceful for @ turn. Such unit cannot attack and doesn't receive damage",
 }
 
 local function random_from(arr)
@@ -125,18 +115,19 @@ local function place_random_bonus(orig_x, orig_y, side)
 
 	local label_text = bonuses_name_short[type]:gsub("@", value)
 	local label_tooltip = bonuses_name_long[type]:gsub("@", value)
-		.. ". Applies to unit standing at this tile at beginning of side "
-		.. side .. "'s turn (BonusTile add-on)"
+		--.. ". Applies to unit standing at this tile at beginning of side " .. side .. "'s turn"
+		.. " (BonusTile add-on"
+		--.. ", side " .. side
+		.. ")"
 
 	local number_of_bonuses_placed = 0
 	for _, pair in ipairs(linked_hexes) do
 		local x = pair[1]
 		local y = pair[2]
-		if get_side(x, y) == nil then
+		if get_type(x, y) == nil then
 			number_of_bonuses_placed = number_of_bonuses_placed + 1
 			set_value(x, y, value)
 			set_type(x, y, type)
-			set_side(x, y, side)
 			set_label(x, y, label_text, label_tooltip)
 		end
 	end
@@ -167,86 +158,87 @@ on_event("start", function()
 		if side.__cfg.allow_player then
 			side.village_gold = side.village_gold - 1
 		end
-		generate_bonuses_for_side(side.side)
 	end
 end)
 
 on_event("turn refresh", function()
 	local side = wesnoth.current.side
+	if (side + wesnoth.current.turn * #wesnoth.sides - 2) % (#wesnoth.sides - 1) ~= 0 then
+		return
+	end
+	--wesnoth.message("Bonus Tiles", "Let's harvest and generate bonuses! Turn: " .. wesnoth.current.turn .. ", side: " .. wesnoth.current.side)
 
 	for y = border, height - border + 1 do
 		for x = border, width - border + 1 do
-			local bonus_side = get_side(x, y)
-			if bonus_side == side then
-				local unit = wesnoth.get_unit(x, y)
-				if unit then
-					local bonus_type = get_type(x, y)
-					local bonus_value = get_value(x, y)
-					if bonus_type == "gold" then
-						wesnoth.sides[unit.side].gold = wesnoth.sides[unit.side].gold + bonus_value
-					elseif bonus_type == "heal" then
-						-- some Eras allow more than maximum HP
-						if unit.hitpoints < unit.max_hitpoints then
-							unit.hitpoints = math.min(unit.max_hitpoints, unit.hitpoints + bonus_value)
-						end
-					elseif bonus_type == "xp" then
-						unit.experience = unit.experience + bonus_value
-						wesnoth.advance_unit(unit)
-					elseif bonus_type == "mp" then
-						wesnoth.add_modification(unit, "object", {
-							T.effect { apply_to = "movement", increase = bonus_value },
-						})
-					elseif bonus_type == "hp" then
-						local add_raw = wesnoth.unit_types[unit.type].max_hitpoints * bonus_value / 100
-						local add = math.max(1, math.floor(add_raw))
-						wesnoth.add_modification(unit, "object", {
-							T.effect { apply_to = "hitpoints", increase_total = add },
-						})
-					elseif bonus_type == "dmg" then
-						local dmg = (unit.variables["bonustile_dmg"] or 0) + bonus_value
-						unit.variables["bonustile_dmg"] = dmg
-						wesnoth.wml_actions.remove_object {
-							object_id = "bonustile_dmg"
-						}
-						wesnoth.add_modification(unit, "object", {
-							id = "bonustile_dmg",
-							T.effect { apply_to = "attack", increase_damage = "+" .. dmg .. "%" },
-						})
-					elseif bonus_type == "teleport" then
-						local teleport_attempt = 0
-						while teleport_attempt < 10 do
-							teleport_attempt = teleport_attempt + 1
-							local tx = wesnoth.random(border, width + 1 - border)
-							local ty = wesnoth.random(border, height + 1 - border)
-							if wesnoth.unit_movement_cost(unit, wesnoth.get_terrain(tx, ty)) <= 4
-								and wesnoth.get_unit(tx, ty) == nil
-							then
-								unit.loc = { tx, ty }
-							end
-						end
-					elseif bonus_type == "sand" then
-						unit.variables.bonustile_sand = bonus_value
-					elseif bonus_type == "troll" then
-						unit.variables.bonustile_troll = bonus_value
-						wesnoth.add_modification(unit, "object", {
-							duration = "turn",
-							T.effect { apply_to = "image_mod", add = "O(0)" },
-							T.effect { apply_to = "overlay", add = "units/trolls/whelp.png" },
-						})
-					elseif bonus_type == "petrify" then
-						unit.variables.bonustile_petrify = bonus_value
-						unit.status.petrified = true
-					elseif bonus_type == "friendship" then
-						unit.variables.bonustile_friendship = bonus_value
-						unit.status.invulnerable = true
-					else
-						wesnoth.message("Bonus Tiles", "Cannot apply unknown bonus type " .. bonus_type)
+			local bonus_type = get_type(x, y)
+			local unit = wesnoth.get_unit(x, y)
+			if unit ~= nil and bonus_type ~= nil then
+				local bonus_value = get_value(x, y)
+				if bonus_type == "gold" then
+					wesnoth.sides[unit.side].gold = wesnoth.sides[unit.side].gold + bonus_value
+				elseif bonus_type == "heal" then
+					-- some Eras allow more than maximum HP
+					if unit.hitpoints < unit.max_hitpoints then
+						unit.hitpoints = math.min(unit.max_hitpoints, unit.hitpoints + bonus_value)
 					end
+				elseif bonus_type == "xp" then
+					unit.experience = unit.experience + bonus_value
+					wesnoth.advance_unit(unit)
+				elseif bonus_type == "mp" then
+					wesnoth.add_modification(unit, "object", {
+						T.effect { apply_to = "movement", increase = bonus_value },
+					})
+				elseif bonus_type == "hp" then
+					local add_raw = wesnoth.unit_types[unit.type].max_hitpoints * bonus_value / 100
+					local add = math.max(1, math.floor(add_raw))
+					wesnoth.add_modification(unit, "object", {
+						T.effect { apply_to = "hitpoints", increase_total = add },
+					})
+				elseif bonus_type == "dmg" then
+					local dmg = (unit.variables["bonustile_dmg"] or 0) + bonus_value
+					unit.variables["bonustile_dmg"] = dmg
+					wesnoth.wml_actions.remove_object {
+						object_id = "bonustile_dmg"
+					}
+					wesnoth.add_modification(unit, "object", {
+						id = "bonustile_dmg",
+						T.effect { apply_to = "attack", increase_damage = "+" .. dmg .. "%" },
+					})
+				elseif bonus_type == "teleport" then
+					local teleport_attempt = 0
+					while teleport_attempt < 10 do
+						teleport_attempt = teleport_attempt + 1
+						local tx = wesnoth.random(border, width + 1 - border)
+						local ty = wesnoth.random(border, height + 1 - border)
+						if wesnoth.unit_movement_cost(unit, wesnoth.get_terrain(tx, ty)) <= 4
+							and wesnoth.get_unit(tx, ty) == nil
+						then
+							unit.loc = { tx, ty }
+						end
+					end
+				elseif bonus_type == "sand" then
+					unit.variables.bonustile_sand = bonus_value
+				elseif bonus_type == "troll" then
+					unit.variables.bonustile_troll = bonus_value
+					wesnoth.add_modification(unit, "object", {
+						duration = "turn",
+						T.effect { apply_to = "image_mod", add = "O(0)" },
+						T.effect { apply_to = "overlay", add = "units/trolls/whelp.png" },
+					})
+				elseif bonus_type == "petrify" then
+					unit.variables.bonustile_petrify = bonus_value
+					unit.status.petrified = true
+				elseif bonus_type == "friendship" then
+					unit.variables.bonustile_friendship = bonus_value
+					unit.status.invulnerable = true
+				else
+					wesnoth.message("Bonus Tiles", "Cannot apply unknown bonus type " .. bonus_type)
 				end
-				remove_bonus(x, y)
 			end
+			remove_bonus(x, y)
 		end
 	end
+
 	generate_bonuses_for_side(side)
 end)
 
@@ -296,11 +288,5 @@ on_event("turn refresh", function()
 
 	end
 end)
-
---on_event("side turn", function()
---	local side = wesnoth.current.side
---	for _, unit in ipairs(wesnoth.get_units { side = side }) do
---	end
---end)
 
 -- >>

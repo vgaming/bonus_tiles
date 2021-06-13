@@ -4,7 +4,7 @@ Baylando:
 Sicario:
 	Fewer ultra-bonuses like +21xp (implementation: use random array element [8, 13, 21] ?)
 vasili:
-	get rid of "side's turn"
+	per-game configuration
 Jess:
 	magnet / pushback
 	illusion unit (disappears upon attack, neither you nor the opponent know if it's real)
