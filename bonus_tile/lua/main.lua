@@ -197,9 +197,7 @@ on_event("turn refresh", function()
 				elseif bonus_type == "dmg" then
 					local dmg = (unit.variables["bonustile_dmg"] or 0) + bonus_value
 					unit.variables["bonustile_dmg"] = dmg
-					wesnoth.wml_actions.remove_object {
-						object_id = "bonustile_dmg"
-					}
+					unit:remove_modifications({ id = "bonustile_dmg" }, "object")
 					wesnoth.add_modification(unit, "object", {
 						id = "bonustile_dmg",
 						T.effect { apply_to = "attack", increase_damage = "+" .. dmg .. "%" },
@@ -221,7 +219,6 @@ on_event("turn refresh", function()
 				elseif bonus_type == "troll" then
 					unit.variables.bonustile_troll = bonus_value
 					wesnoth.add_modification(unit, "object", {
-						duration = "turn",
 						T.effect { apply_to = "image_mod", add = "O(0)" },
 						T.effect { apply_to = "overlay", add = "units/trolls/whelp.png" },
 					})
