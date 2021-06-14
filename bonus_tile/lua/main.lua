@@ -112,7 +112,7 @@ local function random_from(arr)
 	return arr[wesnoth.random(1, #arr)]
 end
 
-local function place_random_bonus(orig_x, orig_y, side)
+local function place_random_bonus(orig_x, orig_y)
 	local linked_hexes = bonustile.find_linked_hexes(orig_x, orig_y)
 	local type = random_from(bonuses_type)
 	local values_arr = bonuses_values[type]
@@ -144,7 +144,7 @@ if peasant == nil then
 	peasant = wesnoth.create_unit { type = "Peasant", id = "bonustile_peasant" }
 end
 
-local function generate_bonuses_for_side(side)
+local function generate_bonuses_for_side()
 	local attempts = 0
 	local number_of_bonuses_placed = 0
 	while number_of_bonuses_placed < bonus_tiles_per_side and attempts < bonus_tiles_per_side * 10 do
@@ -153,7 +153,7 @@ local function generate_bonuses_for_side(side)
 		local y = wesnoth.random(border, height - border + 1)
 		local terrain = wesnoth.get_terrain(x, y)
 		if wesnoth.unit_movement_cost(peasant, terrain) < 10 then
-			number_of_bonuses_placed = number_of_bonuses_placed + place_random_bonus(x, y, side)
+			number_of_bonuses_placed = number_of_bonuses_placed + place_random_bonus(x, y)
 		end
 	end
 end
@@ -167,11 +167,15 @@ on_event("start", function()
 end)
 
 on_event("turn refresh", function()
-	local side = wesnoth.current.side
-	if (side + wesnoth.current.turn * #wesnoth.sides - 2) % (#wesnoth.sides - 1) ~= 0 then
+	if (wesnoth.current.side + wesnoth.current.turn * #wesnoth.sides - 2) % (#wesnoth.sides - 1) ~= 0 then
 		return
 	end
-	--wesnoth.message("Bonus Tiles", "Let's harvest and generate bonuses! Turn: " .. wesnoth.current.turn .. ", side: " .. wesnoth.current.side)
+	--wesnoth.message(
+	--	"Bonus Tiles",
+	--	"Let's harvest and generate bonuses! Turn: "
+	--		.. wesnoth.current.turn
+	--		.. ", side: " .. wesnoth.current.side
+	--)
 
 	for y = border, height - border + 1 do
 		for x = border, width - border + 1 do
@@ -254,7 +258,7 @@ on_event("turn refresh", function()
 		end
 	end
 
-	generate_bonuses_for_side(side)
+	generate_bonuses_for_side()
 end)
 
 local function split_comma(str)
