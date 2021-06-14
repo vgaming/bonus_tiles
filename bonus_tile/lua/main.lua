@@ -5,6 +5,8 @@ local bonustile = bonustile
 local wesnoth = wesnoth
 local ipairs = ipairs
 local math = math
+local table = table
+local string = string
 local on_event = wesnoth.require("lua/on_event.lua")
 local T = wesnoth.require("lua/helper.lua").set_wml_tag_metatable {}
 
@@ -51,15 +53,15 @@ local function remove_bonus(x, y)
 end
 
 local bonuses_type = {
-	"gold", "gold", "gold",
+	"gold", "gold", "gold", "gold", "gold", "gold",
 	"heal", "heal",
-	"xp", "xp",
+	"xp", "xp", "xp", "xp",
 	"mp", "mp",
 	"hp", "hp",
 	"dmg", "dmg",
 	"teleport",
 	"sand", "sand", "sand",
-	"troll",
+	"troll","troll","troll","troll","troll","troll","troll",
 	"petrify",
 	"friendship",
 };
@@ -75,6 +77,7 @@ local bonuses_values = {
 	troll = { 1 },
 	petrify = { 1 },
 	friendship = { 1 },
+	--morph = { -1 },
 }
 local bonuses_name_short = {
 	gold = "+@gold",
@@ -88,6 +91,7 @@ local bonuses_name_short = {
 	troll = "trollify",
 	petrify = "petrify",
 	friendship = "friendship",
+	--morph = "morph",
 }
 local bonuses_name_long = {
 	gold = "Gives +@ gold",
@@ -101,6 +105,7 @@ local bonuses_name_long = {
 	troll = "Gives troll appearance for @ turn",
 	petrify = "Traps and petrifies a unit for @ turn, making it unable to move or attack",
 	friendship = "Makes the unit peaceful for @ turn. Such unit cannot attack and doesn't receive damage",
+	--morph = "Permanently morph this unit into another one of same cost",
 }
 
 local function random_from(arr)
@@ -197,7 +202,7 @@ on_event("turn refresh", function()
 				elseif bonus_type == "dmg" then
 					local dmg = (unit.variables["bonustile_dmg"] or 0) + bonus_value
 					unit.variables["bonustile_dmg"] = dmg
-					unit:remove_modifications({ id = "bonustile_dmg" }, "object")
+					wesnoth.remove_modifications(unit, { id = "bonustile_dmg" }, "object")
 					wesnoth.add_modification(unit, "object", {
 						id = "bonustile_dmg",
 						T.effect { apply_to = "attack", increase_damage = "+" .. dmg .. "%" },
@@ -217,6 +222,19 @@ on_event("turn refresh", function()
 				elseif bonus_type == "sand" then
 					unit.variables.bonustile_sand = bonus_value
 				elseif bonus_type == "troll" then
+					unit.variables.bonustile_troll = bonus_value
+					if not unit.variables.bonustile_troll_type then
+						unit.variables.bonustile_troll_type = unit.type
+						unit.variables.bonustile_troll_advances = table.concat(unit.advances_to, ",")
+						local increase_max_hp = math.max(0, unit.max_hitpoints - 50)
+						wesnoth.add_modification(unit, "object", {
+							id = "bonustile_troll",
+							T.effect { apply_to = "hitpoints", increase_total = increase_max_hp },
+							T.effect { apply_to = "max_experience", increase = 1000 },
+						})
+						wesnoth.transform_unit(unit, "Troll Whelp")
+					end
+				elseif bonus_type == "troll_old" then
 					unit.variables.bonustile_troll = bonus_value
 					wesnoth.add_modification(unit, "object", {
 						T.effect { apply_to = "image_mod", add = "O(0)" },
@@ -239,6 +257,18 @@ on_event("turn refresh", function()
 	generate_bonuses_for_side(side)
 end)
 
+local function split_comma(str)
+	local result = {}
+	local n = 1
+	for s in string.gmatch(str or "", "%s*[^,]+%s*") do
+		if s ~= "" then
+			result[n] = s
+			n = n + 1
+		end
+	end
+	return result
+end
+
 on_event("turn refresh", function()
 	local side = wesnoth.current.side
 	for _, unit in ipairs(wesnoth.get_units { side = side }) do
@@ -255,14 +285,12 @@ on_event("turn refresh", function()
 		if troll > 0 then
 			unit.variables.bonustile_troll = troll - 1
 		elseif troll == 0 then
+			wesnoth.remove_modifications(unit, { id = "bonustile_troll" }, "object")
+			wesnoth.transform_unit(unit, unit.variables.bonustile_troll_type)
+			unit.advances_to = split_comma(unit.variables.bonustile_troll_advances)
 			unit.variables.bonustile_troll = nil
-			wesnoth.wml_actions.remove_unit_overlay {
-				image = "units/trolls/whelp.png",
-			}
-			local img = unit.image_mods:gsub("O%(0%)", "NOP()", 1)
-			wesnoth.add_modification(unit, "object", {
-				T.effect { apply_to = "image_mod", replace = img },
-			})
+			unit.variables.bonustile_troll_type = nil
+			unit.variables.bonustile_troll_advances = nil
 		end
 
 		-- petrify
