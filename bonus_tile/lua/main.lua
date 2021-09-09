@@ -102,7 +102,7 @@ local bonuses_name_long = {
 	dmg = "Gives +@% to unit base damages",
 	teleport = "Teleports to a random place on the map",
 	sand = "Traps a unit for @ turn, making it unable to move",
-	troll = "Gives troll appearance for @ turn",
+	troll = "Transforms into a Troll for @ turn",
 	petrify = "Traps and petrifies a unit for @ turn, making it unable to move or attack",
 	friendship = "Makes the unit peaceful for @ turn. Such unit cannot attack and doesn't receive damage",
 	--morph = "Permanently morph this unit into another one of same cost",
@@ -236,7 +236,13 @@ on_event("turn refresh", function()
 							T.effect { apply_to = "hitpoints", increase_total = increase_max_hp },
 							T.effect { apply_to = "max_experience", increase = 1000 },
 						})
-						wesnoth.transform_unit(unit, "Troll Whelp")
+						if unit.level <= 1 then
+							wesnoth.transform_unit(unit, "Troll Whelp")
+						elseif unit.level == 2 then
+							wesnoth.transform_unit(unit, "Troll")
+						else
+							wesnoth.transform_unit(unit, "Troll Warrior")
+						end
 					end
 				elseif bonus_type == "troll_old" then
 					unit.variables.bonustile_troll = bonus_value
