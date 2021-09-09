@@ -61,7 +61,7 @@ local bonuses_type = {
 	"dmg", "dmg",
 	"teleport",
 	"sand", "sand", "sand",
-	"troll","troll","troll","troll","troll","troll","troll",
+	"troll","troll","troll","troll","troll",
 	"petrify",
 	"friendship",
 };
