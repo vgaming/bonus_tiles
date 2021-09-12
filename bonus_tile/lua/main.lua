@@ -56,22 +56,22 @@ local function remove_bonus(x, y)
 end
 
 local bonuses_type = {
-	"gold", "gold", "gold", "gold", "gold", "gold",
-	"heal", "heal",
+	"gold", "gold", "gold", "gold", "gold", "gold", "gold",
+	"heal", "heal", "heal", "heal", "heal", "heal",
 	"xp", "xp", "xp", "xp",
 	"mp", "mp",
 	"hp", "hp",
 	"dmg", "dmg",
 	"teleport",
-	"sand", "sand", "sand",
-	"troll","troll","troll","troll","troll",
+	"sand", "sand",
+	"troll","troll","troll",
 	"petrify",
 	"friendship",
 };
 local bonuses_values = {
-	gold = { 5, 5, 5, 8, 8, 13 },
-	heal = { 5, 5, 5, 8, 8, 10 },
-	xp = { 5, 5, 5, 10, 10, 15 },
+	gold = { 5, 5, 5, 5, 8, 8, 13 },
+	heal = { 5, 5, 5, 5, 8, 8, 10 },
+	xp = { 3, 3, 3, 5, 5, 5, 8 },
 	mp = { 1 },
 	hp = { 10 },
 	dmg = { 10 },
