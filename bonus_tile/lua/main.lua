@@ -47,9 +47,12 @@ local function set_label(x, y, text, tooltip)
 end
 
 local function remove_bonus(x, y)
-	set_type(x, y, nil)
-	set_value(x, y, nil)
-	set_label(x, y, nil, nil)
+	local old_bonus_type = get_type(x, y)
+	if old_bonus_type ~= nil then
+		set_label(x, y, nil, nil)
+		set_type(x, y, nil)
+		set_value(x, y, nil)
+	end
 end
 
 local bonuses_type = {
