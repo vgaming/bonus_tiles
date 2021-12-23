@@ -63,27 +63,12 @@ local bonuses_type = {
 	"mp", "mp",
 	"hp", "hp",
 	"dmg", "dmg",
+	"teleport",
 	"sand", "sand",
 	"troll","troll","troll",
 	"petrify",
 	"friendship",
 };
-local allow_teleport = wml.variables["bonus_tile_allow_teleport"]
-if allow_teleport == nil then
-	allow_teleport = true
-	for _, leader_from in ipairs(wesnoth.units.find_on_map { canrecruit = true }) do
-		for _, leader_to in ipairs(wesnoth.units.find_on_map { canrecruit = true }) do
-			local _path, cost = wesnoth.paths.find_path(leader_from.loc, leader_to.loc, { ignore_units = true })
-			if cost > 1000 then
-				allow_teleport = false
-			end
-		end
-	end
-	wml.variables["bonus_tile_allow_teleport"] = allow_teleport
-end
-if allow_teleport then
-	bonuses_type[#bonuses_type + 1] = "teleport"
-end
 
 local bonuses_values = {
 	gold = { 5, 5, 5, 5, 8, 8, 13 },
@@ -120,7 +105,7 @@ local bonuses_name_long = {
 	mp = "Gives +@ movement permanently",
 	hp = "Gives +@% of unit base hitpoints permanently",
 	dmg = "Gives +@% to unit base damages permanently",
-	teleport = "Teleports to a random place on the map",
+	teleport = "Teleports to a random place on the map (maximum 3 moves away)",
 	sand = "Traps a unit for @ turn, making it unable to move",
 	troll = "Transforms into a Troll for @ turn",
 	petrify = "Traps and petrifies a unit for @ turn, making it unable to move or attack",
@@ -237,9 +222,8 @@ on_event("turn refresh", function()
 						teleport_attempt = teleport_attempt + 1
 						local tx = mathx.random(border, width + 1 - border)
 						local ty = mathx.random(border, height + 1 - border)
-						if wesnoth.units.movement_on(unit, wesnoth.get_terrain(tx, ty)) <= 4
-							and wesnoth.units.get(tx, ty) == nil
-						then
+						local _path, cost = wesnoth.paths.find_path(unit.loc, tx, ty, { ignore_units = true })
+						if wesnoth.units.get(tx, ty) == nil and cost <= unit.max_moves * 3 then
 							unit.loc = { tx, ty }
 						end
 					end
