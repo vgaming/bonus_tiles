@@ -63,12 +63,28 @@ local bonuses_type = {
 	"mp", "mp",
 	"hp", "hp",
 	"dmg", "dmg",
-	"teleport",
 	"sand", "sand",
 	"troll","troll","troll",
 	"petrify",
 	"friendship",
 };
+local allow_teleport = wml.variables["bonus_tile_allow_teleport"]
+if allow_teleport == nil then
+	allow_teleport = true
+	for _, leader_from in ipairs(wesnoth.units.find_on_map { canrecruit = true }) do
+		for _, leader_to in ipairs(wesnoth.units.find_on_map { canrecruit = true }) do
+			local _path, cost = wesnoth.paths.find_path(leader_from.loc, leader_to.loc, { ignore_units = true })
+			if cost > 1000 then
+				allow_teleport = false
+			end
+		end
+	end
+	wml.variables["bonus_tile_allow_teleport"] = allow_teleport
+end
+if allow_teleport then
+	bonuses_type[#bonuses_type + 1] = "teleport"
+end
+
 local bonuses_values = {
 	gold = { 5, 5, 5, 5, 8, 8, 13 },
 	heal = { 5, 5, 5, 5, 8, 8, 10 },
