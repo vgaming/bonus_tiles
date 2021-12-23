@@ -11,7 +11,8 @@ local bonustile = bonustile
 
 local config_threshold = 0.9
 
-local width, height = wesnoth.get_map_size()
+local width = wesnoth.current.map.playable_width
+local height = wesnoth.current.map.playable_height
 local hex_horisontal_size = math.sqrt(3) / 2
 
 local function to_complex(wesnoth_x, wesnoth_y)
@@ -30,28 +31,28 @@ end
 local map_has_castles_or_villages = false
 for wes_x = 1, width do
 	for wes_y = 1, height do
-		local terrain_string = wesnoth.get_terrain(wes_x, wes_y)
-		local info = wesnoth.get_terrain_info(terrain_string)
+		local terrain_string = wesnoth.current.map[{wes_x, wes_y}]
+		local info = wesnoth.terrain_types[terrain_string]
 		if info.castle or info.village then
 			map_has_castles_or_villages = true
 		end
 	end
 end
 
-local unit = wesnoth.create_unit { type = "Peasant" }
+local unit = wesnoth.units.create { type = "Peasant" }
 
-local center_re = wesnoth.get_variable("mapanalyze_center_re")
-local center_im = wesnoth.get_variable("mapanalyze_center_im")
+local center_re = wml.variables["mapanalyze_center_re"]
+local center_im = wml.variables["mapanalyze_center_im"]
 if center_re == nil or center_im == nil then
 	center_re = 0
 	center_im = 0
 	local center_tile_count = 0
 	for wes_x = 1, width do
 		for wes_y = 1, height do
-			local terrain_string = wesnoth.get_terrain(wes_x, wes_y)
-			local info = wesnoth.get_terrain_info(terrain_string)
+			local terrain_string = wesnoth.current.map[{wes_x, wes_y}]
+			local info = wesnoth.terrain_types[terrain_string]
 			local walkable = not map_has_castles_or_villages
-				and wesnoth.unit_movement_cost(unit, terrain_string) < 10
+				and wesnoth.units.movement_on(unit, terrain_string) < 10
 			if info.castle or info.village or walkable then
 				local re, im = to_complex(wes_x, wes_y)
 				center_re = center_re + re
@@ -62,8 +63,8 @@ if center_re == nil or center_im == nil then
 	end
 	center_re = center_re / center_tile_count
 	center_im = center_im / center_tile_count
-	wesnoth.set_variable("mapanalyze_center_re", center_re)
-	wesnoth.set_variable("mapanalyze_center_im", center_im)
+	wml.variables["mapanalyze_center_re"] = center_re
+	wml.variables["mapanalyze_center_im"] = center_im
 end
 
 
@@ -101,13 +102,13 @@ end
 
 local function similar_terrain(terrain_a, terrain_b)
 	if map_has_castles_or_villages then
-		local a = wesnoth.get_terrain_info(terrain_a)
-		local b = wesnoth.get_terrain_info(terrain_b)
+		local a = wesnoth.terrain_types[terrain_a]
+		local b = wesnoth.terrain_types[terrain_b]
 		return a.castle == b.castle and a.village == b.village
 	else
 		--local clean = string.gsub(terrain_string, "[^A-DF-Z]", "")
-		local cost_a = math.min(10, wesnoth.unit_movement_cost(unit, terrain_a))
-		local cost_b = math.min(10, wesnoth.unit_movement_cost(unit, terrain_b))
+		local cost_a = math.min(10, wesnoth.units.movement_on(unit, terrain_a))
+		local cost_b = math.min(10, wesnoth.units.movement_on(unit, terrain_b))
 		return cost_a == cost_b
 	end
 end
@@ -120,8 +121,8 @@ local function test_bijection(func)
 			local new_x, new_y = func(wes_x, wes_y)
 			if new_x and new_y and new_x >= 1 and new_x <= width and new_y >= 1 and new_y <= height then
 				tested_count = tested_count + 1
-				local terrain_orig = wesnoth.get_terrain(wes_x, wes_y)
-				local terrain_new = wesnoth.get_terrain(new_x, new_y)
+				local terrain_orig = wesnoth.current.map[{ wes_x, wes_y }]
+				local terrain_new = wesnoth.current.map[{ new_x, new_y }]
 				if similar_terrain(terrain_orig, terrain_new) then
 					match = match + 1
 				end

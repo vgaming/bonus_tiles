@@ -8,10 +8,11 @@ local math = math
 local table = table
 local string = string
 local on_event = wesnoth.require("lua/on_event.lua")
-local T = wesnoth.require("lua/helper.lua").set_wml_tag_metatable {}
 
 ---@type number
-local width, height, border = wesnoth.get_map_size()
+local width = wesnoth.current.map.playable_width
+local height = wesnoth.current.map.playable_height
+local border = wesnoth.current.map.border_size
 local bonus_tiles_per_side = math.ceil(
 	(width + 1 - 2 * border)
 		* (height + 1 - 2 * border)
@@ -20,23 +21,23 @@ local bonus_tiles_per_side = math.ceil(
 
 ---@return string
 local function get_type(x, y)
-	return wesnoth.get_variable("bonustile_type_" .. x .. "_" .. y)
+	return wml.variables["bonustile_type_" .. x .. "_" .. y]
 end
 
 ---@return number
 local function get_value(x, y)
-	return wesnoth.get_variable("bonustile_value_" .. x .. "_" .. y)
+	return wml.variables["bonustile_value_" .. x .. "_" .. y]
 end
 
 local function set_type(x, y, type)
-	wesnoth.set_variable("bonustile_type_" .. x .. "_" .. y, type)
+	wml.variables["bonustile_type_" .. x .. "_" .. y] = type
 end
 local function set_value(x, y, value)
-	wesnoth.set_variable("bonustile_value_" .. x .. "_" .. y, value)
+	wml.variables["bonustile_value_" .. x .. "_" .. y] = value
 end
 
 local function set_label(x, y, text, tooltip)
-	wesnoth.label {
+	wesnoth.map.add_label {
 		x = x,
 		y = y,
 		text = text,
@@ -112,7 +113,7 @@ local bonuses_name_long = {
 }
 
 local function random_from(arr)
-	return arr[wesnoth.random(1, #arr)]
+	return arr[mathx.random(1, #arr)]
 end
 
 local function place_random_bonus(orig_x, orig_y)
@@ -142,9 +143,9 @@ local function place_random_bonus(orig_x, orig_y)
 	return number_of_bonuses_placed
 end
 
-local peasant = wesnoth.get_units { id = "bonustile_peasant" }[1]
+local peasant = wesnoth.units.find_on_map { id = "bonustile_peasant" }[1]
 if peasant == nil then
-	peasant = wesnoth.create_unit { type = "Peasant", id = "bonustile_peasant" }
+	peasant = wesnoth.units.create { type = "Peasant", id = "bonustile_peasant" }
 end
 
 local function generate_bonuses_for_side()
@@ -152,10 +153,10 @@ local function generate_bonuses_for_side()
 	local number_of_bonuses_placed = 0
 	while number_of_bonuses_placed < bonus_tiles_per_side and attempts < bonus_tiles_per_side * 10 do
 		attempts = attempts + 1
-		local x = wesnoth.random(border, width - border + 1)
-		local y = wesnoth.random(border, height - border + 1)
-		local terrain = wesnoth.get_terrain(x, y)
-		if wesnoth.unit_movement_cost(peasant, terrain) < 10 then
+		local x = mathx.random(border, width - border + 1)
+		local y = mathx.random(border, height - border + 1)
+		local terrain = wesnoth.current.map[{x, y}]
+		if wesnoth.units.movement_on(peasant, terrain) < 10 then
 			number_of_bonuses_placed = number_of_bonuses_placed + place_random_bonus(x, y)
 		end
 	end
@@ -183,7 +184,7 @@ on_event("turn refresh", function()
 	for y = border, height - border + 1 do
 		for x = border, width - border + 1 do
 			local bonus_type = get_type(x, y)
-			local unit = wesnoth.get_unit(x, y)
+			local unit = wesnoth.units.get(x, y)
 			if unit ~= nil and bonus_type ~= nil then
 				local bonus_value = get_value(x, y)
 				if bonus_type == "gold" then
@@ -198,13 +199,13 @@ on_event("turn refresh", function()
 					wesnoth.advance_unit(unit)
 				elseif bonus_type == "mp" then
 					wesnoth.add_modification(unit, "object", {
-						T.effect { apply_to = "movement", increase = bonus_value },
+						wml.tag.effect { apply_to = "movement", increase = bonus_value },
 					})
 				elseif bonus_type == "hp" then
 					local add_raw = wesnoth.unit_types[unit.type].max_hitpoints * bonus_value / 100
 					local add = math.max(1, math.floor(add_raw))
 					wesnoth.add_modification(unit, "object", {
-						T.effect { apply_to = "hitpoints", increase_total = add },
+						wml.tag.effect { apply_to = "hitpoints", increase_total = add },
 					})
 				elseif bonus_type == "dmg" then
 					local dmg = (unit.variables["bonustile_dmg"] or 0) + bonus_value
@@ -212,16 +213,16 @@ on_event("turn refresh", function()
 					wesnoth.remove_modifications(unit, { id = "bonustile_dmg" }, "object")
 					wesnoth.add_modification(unit, "object", {
 						id = "bonustile_dmg",
-						T.effect { apply_to = "attack", increase_damage = "+" .. dmg .. "%" },
+						wml.tag.effect { apply_to = "attack", increase_damage = "+" .. dmg .. "%" },
 					})
 				elseif bonus_type == "teleport" then
 					local teleport_attempt = 0
 					while teleport_attempt < 10 do
 						teleport_attempt = teleport_attempt + 1
-						local tx = wesnoth.random(border, width + 1 - border)
-						local ty = wesnoth.random(border, height + 1 - border)
-						if wesnoth.unit_movement_cost(unit, wesnoth.get_terrain(tx, ty)) <= 4
-							and wesnoth.get_unit(tx, ty) == nil
+						local tx = mathx.random(border, width + 1 - border)
+						local ty = mathx.random(border, height + 1 - border)
+						if wesnoth.units.movement_on(unit, wesnoth.get_terrain(tx, ty)) <= 4
+							and wesnoth.units.get(tx, ty) == nil
 						then
 							unit.loc = { tx, ty }
 						end
@@ -236,8 +237,8 @@ on_event("turn refresh", function()
 						local increase_max_hp = math.max(0, unit.max_hitpoints - 50)
 						wesnoth.add_modification(unit, "object", {
 							id = "bonustile_troll",
-							T.effect { apply_to = "hitpoints", increase_total = increase_max_hp },
-							T.effect { apply_to = "max_experience", increase = 1000 },
+							wml.tag.effect { apply_to = "hitpoints", increase_total = increase_max_hp },
+							wml.tag.effect { apply_to = "max_experience", increase = 1000 },
 						})
 						if unit.level <= 1 then
 							wesnoth.transform_unit(unit, "Troll Whelp")
@@ -250,8 +251,8 @@ on_event("turn refresh", function()
 				elseif bonus_type == "troll_old" then
 					unit.variables.bonustile_troll = bonus_value
 					wesnoth.add_modification(unit, "object", {
-						T.effect { apply_to = "image_mod", add = "O(0)" },
-						T.effect { apply_to = "overlay", add = "units/trolls/whelp.png" },
+						wml.tag.effect { apply_to = "image_mod", add = "O(0)" },
+						wml.tag.effect { apply_to = "overlay", add = "units/trolls/whelp.png" },
 					})
 				elseif bonus_type == "petrify" then
 					unit.variables.bonustile_petrify = bonus_value
@@ -284,7 +285,7 @@ end
 
 on_event("turn refresh", function()
 	local side = wesnoth.current.side
-	for _, unit in ipairs(wesnoth.get_units { side = side }) do
+	for _, unit in ipairs(wesnoth.units.find_on_map { side = side }) do
 
 		-- sand
 		local sand = unit.variables.bonustile_sand or -1
