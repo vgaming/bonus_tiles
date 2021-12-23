@@ -1,3 +1,3 @@
 globals = {
-	"wesnoth", "bonustile",
+	"wesnoth", "bonustile", "mathx"
 }

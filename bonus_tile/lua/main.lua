@@ -7,6 +7,7 @@ local ipairs = ipairs
 local math = math
 local table = table
 local string = string
+local mathx = mathx
 local on_event = wesnoth.require("lua/on_event.lua")
 
 ---@type number
@@ -222,7 +223,7 @@ on_event("turn refresh", function()
 						teleport_attempt = teleport_attempt + 1
 						local tx = mathx.random(border, width + 1 - border)
 						local ty = mathx.random(border, height + 1 - border)
-						local _path, cost = wesnoth.paths.find_path(unit.loc, tx, ty, { ignore_units = true })
+						local _, cost = wesnoth.paths.find_path(unit.loc, tx, ty, { ignore_units = true })
 						if wesnoth.units.get(tx, ty) == nil and cost <= unit.max_moves * 3 then
 							unit.loc = { tx, ty }
 						end
