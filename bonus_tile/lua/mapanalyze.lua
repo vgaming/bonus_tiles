@@ -9,7 +9,9 @@ local math = math
 local ipairs = ipairs
 local bonustile = bonustile
 
-local config_threshold = 0.9
+-- Should be at least 0.93 to detect only 1 symmetry on Isar.
+-- Can maybe be higher?
+local config_threshold = 0.93
 
 local width = wesnoth.current.map.playable_width
 local height = wesnoth.current.map.playable_height
