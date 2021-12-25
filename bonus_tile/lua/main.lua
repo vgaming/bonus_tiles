@@ -12,7 +12,9 @@ local on_event = wesnoth.require("lua/on_event.lua")
 
 ---@type number
 local width = wesnoth.current.map.playable_width
+---@type number
 local height = wesnoth.current.map.playable_height
+---@type number
 local border = wesnoth.current.map.border_size
 local bonus_tiles_per_side = math.ceil(
 	(width + 1 - 2 * border)
@@ -183,8 +185,8 @@ on_event("turn refresh", function()
 	--		.. ", side: " .. wesnoth.current.side
 	--)
 
-	for y = border, height - border + 1 do
-		for x = border, width - border + 1 do
+	for y = math.max(border, 1), height - math.max(border, 1) + 1 do
+		for x = math.max(border, 1), width - math.max(border, 1) + 1 do
 			local bonus_type = get_type(x, y)
 			local unit = wesnoth.units.get(x, y)
 			if unit ~= nil and bonus_type ~= nil then
