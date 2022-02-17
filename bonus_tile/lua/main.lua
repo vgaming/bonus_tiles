@@ -152,7 +152,7 @@ if peasant == nil then
 	peasant = wesnoth.units.create { type = "Peasant", id = "bonustile_peasant" }
 end
 
-local function generate_bonuses_for_side()
+local function generate_bonuses()
 	local attempts = 0
 	local number_of_bonuses_placed = 0
 	while number_of_bonuses_placed < bonus_tiles_per_side and attempts < bonus_tiles_per_side * 10 do
@@ -174,10 +174,22 @@ on_event("start", function()
 	end
 end)
 
+local humans_count = 0
+for _, side in ipairs(wesnoth.sides) do
+	if side.__cfg.allow_player then
+		humans_count = humans_count + 1
+	end
+end
+
 on_event("turn refresh", function()
-	if (wesnoth.current.side + wesnoth.current.turn * #wesnoth.sides - 2) % (#wesnoth.sides - 1) ~= 0 then
+	if not wesnoth.sides[wesnoth.current.side].__cfg.allow_player then
 		return
 	end
+	if wml.variables.bonus_tile_turn_refreshes < humans_count - 2 then
+		wml.variables.bonus_tile_turn_refreshes = wml.variables.bonus_tile_turn_refreshes + 1
+		return
+	end
+	wml.variables.bonus_tile_turn_refreshes = 0
 	--wesnoth.message(
 	--	"Bonus Tiles",
 	--	"Let's harvest and generate bonuses! Turn: "
@@ -271,7 +283,7 @@ on_event("turn refresh", function()
 		end
 	end
 
-	generate_bonuses_for_side()
+	generate_bonuses()
 end)
 
 local function split_comma(str)
