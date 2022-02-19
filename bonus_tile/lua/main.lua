@@ -185,7 +185,8 @@ on_event("turn refresh", function()
 	if not wesnoth.sides[wesnoth.current.side].__cfg.allow_player then
 		return
 	end
-	if wml.variables.bonus_tile_turn_refreshes < humans_count - 2 then
+	if wml.variables.bonus_tile_turn_refreshes
+		and wml.variables.bonus_tile_turn_refreshes < humans_count - 2 then
 		wml.variables.bonus_tile_turn_refreshes = wml.variables.bonus_tile_turn_refreshes + 1
 		return
 	end
