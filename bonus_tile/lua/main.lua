@@ -39,26 +39,6 @@ local function set_value(x, y, value)
 	wml.variables["bonustile_value_" .. x .. "_" .. y] = value
 end
 
-local function set_label(x, y, text, tooltip)
-	wesnoth.map.add_label {
-		x = x,
-		y = y,
-		text = text,
-		tooltip = tooltip,
-		visible_in_fog = false,
-		category = "bonus_tile",
-	}
-end
-
-local function remove_bonus(x, y)
-	local old_bonus_type = get_type(x, y)
-	if old_bonus_type ~= nil then
-		set_label(x, y, nil, nil)
-		set_type(x, y, nil)
-		set_value(x, y, nil)
-	end
-end
-
 local bonuses_type = {
 	"gold", "gold", "gold", "gold", "gold", "gold", "gold",
 	"heal", "heal", "heal", "heal", "heal", "heal",
@@ -116,6 +96,33 @@ local bonuses_name_long = {
 	--morph = "Permanently morph this unit into another one of same cost",
 }
 
+local function update_label(x, y)
+	local type = get_type(x, y)
+	local value = get_value(x, y)
+	local text = type and bonuses_name_short[type]:gsub("@", value)
+	local tooltip = type and bonuses_name_long[type]:gsub("@", value)
+		--.. ". Applies to unit standing at this tile at beginning of side " .. side .. "'s turn"
+		.. " (BonusTile add-on"
+		--.. ", side " .. side
+		.. ")"
+
+	wesnoth.map.add_label {
+		x = x,
+		y = y,
+		text = text,
+		tooltip = tooltip,
+		visible_in_fog = false,
+		category = "bonus_tile",
+	}
+end
+
+function bonustile.exported_change_bonus_position_v1(oldx, oldy, newx, newy)
+	set_type(newx, newy, get_type(oldx, oldy))
+	set_value(newx, newy, get_value(oldx, oldy))
+	update_label(oldx, oldy)
+	update_label(newx, newy)
+end
+
 local function random_from(arr)
 	return arr[mathx.random(1, #arr)]
 end
@@ -126,13 +133,6 @@ local function place_random_bonus(orig_x, orig_y)
 	local values_arr = bonuses_values[type]
 	local value = random_from(values_arr)
 
-	local label_text = bonuses_name_short[type]:gsub("@", value)
-	local label_tooltip = bonuses_name_long[type]:gsub("@", value)
-		--.. ". Applies to unit standing at this tile at beginning of side " .. side .. "'s turn"
-		.. " (BonusTile add-on"
-		--.. ", side " .. side
-		.. ")"
-
 	local number_of_bonuses_placed = 0
 	for _, pair in ipairs(linked_hexes) do
 		local x = pair[1]
@@ -141,7 +141,7 @@ local function place_random_bonus(orig_x, orig_y)
 			number_of_bonuses_placed = number_of_bonuses_placed + 1
 			set_value(x, y, value)
 			set_type(x, y, type)
-			set_label(x, y, label_text, label_tooltip)
+			update_label(x, y)
 		end
 	end
 	return number_of_bonuses_placed
@@ -280,7 +280,9 @@ on_event("turn refresh", function()
 					wesnoth.message("Bonus Tiles", "Cannot apply unknown bonus type " .. bonus_type)
 				end
 			end
-			remove_bonus(x, y)
+			set_type(x, y, nil)
+			set_value(x, y, nil)
+			update_label(x, y)
 		end
 	end
 
