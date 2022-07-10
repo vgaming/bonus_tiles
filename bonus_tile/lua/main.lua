@@ -172,6 +172,7 @@ on_event("start", function()
 			side.village_gold = side.village_gold - 1
 		end
 	end
+	wml.variables["bonustile_enabled"] = true
 end)
 
 local humans_count = 0
