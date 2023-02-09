@@ -157,8 +157,8 @@ local function generate_bonuses()
 	local number_of_bonuses_placed = 0
 	while number_of_bonuses_placed < bonus_tiles_per_side and attempts < bonus_tiles_per_side * 10 do
 		attempts = attempts + 1
-		local x = mathx.random(border, width - border + 1)
-		local y = mathx.random(border, height - border + 1)
+		local x = mathx.random(math.max(border, 1) + 1, width - math.max(border, 1) + 1)
+		local y = mathx.random(math.max(border, 1) + 1, height - math.max(border, 1) + 1)
 		local terrain = wesnoth.current.map[{x, y}]
 		if wesnoth.units.movement_on(peasant, terrain) < 10 then
 			number_of_bonuses_placed = number_of_bonuses_placed + place_random_bonus(x, y)

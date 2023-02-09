@@ -1,6 +1,10 @@
 -- << mapanalyze.lua
 
--- This "module" uses so called Complex Numbers https://en.wikipedia.org/wiki/Complex_number
+-- The intention of this module is to find map symmetries and make then available
+-- as functions for other modules within this add-on.
+
+-- To find symmetries including rotational symmetries,
+-- this module uses so called Complex Numbers https://en.wikipedia.org/wiki/Complex_number
 -- We note wesnoth coordinates as wes_x, wes_y.
 -- We note complex coordinates as re,im (real and imaginary components of a complex number).
 
@@ -70,10 +74,13 @@ if center_re == nil or center_im == nil then
 end
 
 
+-- Multiply two complex numbers
 local function complex_multiply(first_re, first_im, second_re, second_im)
 	return first_re * second_re - first_im * second_im, first_re * second_im + first_im * second_re
 end
 
+-- Return a function that does a wesnoth-coordinates rotation,
+-- given a complex number that sets the complex rotation.
 local function rot_func(rot_re, rot_im)
 	return function(wes_x, wes_y)
 		local re1, im1 = to_complex(wes_x, wes_y)
@@ -115,6 +122,9 @@ local function similar_terrain(terrain_a, terrain_b)
 	end
 end
 
+-- Test if a transformation is a symmetry.
+-- It is implemented by checking if the result of applying a map transformation
+-- gives the same map as we had.
 local function test_bijection(func)
 	local tested_count = 0
 	local match = 0
@@ -152,16 +162,16 @@ end
 
 
 function bonustile.find_linked_hexes(x, y)
-	local result = { {x, y} }
+	local array = { {x, y} }
 	local set = { [x .. "," .. y] = true }
 	for _, func in ipairs(symmetry_functions) do
 		local new_x, new_y = func(x, y)
 		if not set[new_x .. "," .. new_y] then
 			set[new_x .. "," .. new_y] = true
-			result[#result + 1] = { new_x, new_y }
+			array[#array + 1] = { new_x, new_y }
 		end
 	end
-	return result
+	return array
 end
 
 
