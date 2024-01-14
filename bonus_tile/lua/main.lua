@@ -1,4 +1,10 @@
--- << bonustile/main.lua
+-- << main | bonus_tile
+if rawget(_G, "main | bonus_tile") then
+	-- TODO: remove this code once https://github.com/wesnoth/wesnoth/issues/8157 is fixed
+	return
+else
+	rawset(_G, "main | bonus_tile", true)
+end
 
 bonustile = {}
 local bonustile = bonustile
@@ -216,20 +222,20 @@ on_event("turn refresh", function()
 					unit.experience = unit.experience + bonus_value
 					wesnoth.advance_unit(unit)
 				elseif bonus_type == "mp" then
-					wesnoth.add_modification(unit, "object", {
+					wesnoth.units.add_modification(unit, "object", {
 						wml.tag.effect { apply_to = "movement", increase = bonus_value },
 					})
 				elseif bonus_type == "hp" then
 					local add_raw = wesnoth.unit_types[unit.type].max_hitpoints * bonus_value / 100
 					local add = math.max(1, math.floor(add_raw))
-					wesnoth.add_modification(unit, "object", {
+					wesnoth.units.add_modification(unit, "object", {
 						wml.tag.effect { apply_to = "hitpoints", increase_total = add },
 					})
 				elseif bonus_type == "dmg" then
 					local dmg = (unit.variables["bonustile_dmg"] or 0) + bonus_value
 					unit.variables["bonustile_dmg"] = dmg
 					wesnoth.remove_modifications(unit, { id = "bonustile_dmg" }, "object")
-					wesnoth.add_modification(unit, "object", {
+					wesnoth.units.add_modification(unit, "object", {
 						id = "bonustile_dmg",
 						wml.tag.effect { apply_to = "attack", increase_damage = "+" .. dmg .. "%" },
 					})
@@ -252,7 +258,7 @@ on_event("turn refresh", function()
 						unit.variables.bonustile_troll_type = unit.type
 						unit.variables.bonustile_troll_advances = table.concat(unit.advances_to, ",")
 						local increase_max_hp = math.max(0, unit.max_hitpoints - 50)
-						wesnoth.add_modification(unit, "object", {
+						wesnoth.units.add_modification(unit, "object", {
 							id = "bonustile_troll",
 							wml.tag.effect { apply_to = "hitpoints", increase_total = increase_max_hp },
 							wml.tag.effect { apply_to = "max_experience", increase = 1000 },
@@ -267,7 +273,7 @@ on_event("turn refresh", function()
 					end
 				elseif bonus_type == "troll_old" then
 					unit.variables.bonustile_troll = bonus_value
-					wesnoth.add_modification(unit, "object", {
+					wesnoth.units.add_modification(unit, "object", {
 						wml.tag.effect { apply_to = "image_mod", add = "O(0)" },
 						wml.tag.effect { apply_to = "overlay", add = "units/trolls/whelp.png" },
 					})

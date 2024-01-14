@@ -1,4 +1,10 @@
--- << mapanalyze.lua
+-- << mapanalyze | bonus_tile
+if rawget(_G, "mapanalyze | bonus_tile") then
+	-- TODO: remove this code once https://github.com/wesnoth/wesnoth/issues/8157 is fixed
+	return
+else
+	rawset(_G, "mapanalyze | bonus_tile", true)
+end
 
 -- The intention of this module is to find map symmetries and make then available
 -- as functions for other modules within this add-on.
