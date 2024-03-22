@@ -3,4 +3,4 @@
 
 not_pushed_ignore=true
 
-upload_to_wesnoth_versions=(1.17)
+upload_to_wesnoth_versions=(1.18)
